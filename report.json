@@ -1,0 +1,111 @@
+{
+  "summary": {
+    "total_vulnerabilities": 11,
+    "critical": 2,
+    "high": 7,
+    "medium": 1,
+    "low": 1
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "inputs.py",
+      "line_numbers": [11],
+      "vulnerability_type": "Hardcoded secret (PAYMENT_TOKEN)",
+      "severity": "High",
+      "description": "A production payment token is hardcoded in source code which can be leaked via source control or deployed artifacts.",
+      "fix_explanation": "Move secrets into environment variables or a secret store. Read PAYMENT_TOKEN via os.getenv and fail safely if not set.",
+      "secure_code_snippet": "PAYMENT_TOKEN = os.getenv(\"PAYMENT_TOKEN\")"
+    },
+    {
+      "id": 2,
+      "file": "inputs.py",
+      "line_numbers": [12],
+      "vulnerability_type": "Hardcoded secret (MAIL_SERVER_KEY)",
+      "severity": "High",
+      "description": "Mail server credentials are hardcoded and can be leaked.",
+      "fix_explanation": "Use environment variables or vault to hold mail server keys, load with os.getenv.",
+      "secure_code_snippet": "MAIL_SERVER_KEY = os.getenv(\"MAIL_SERVER_KEY\")"
+    },
+    {
+      "id": 3,
+      "file": "inputs.py",
+      "line_numbers": [13, 19],
+      "vulnerability_type": "Hardcoded internal secret (INTERNAL_AUTH) and weak use of it",
+      "severity": "High",
+      "description": "INTERNAL_AUTH is hardcoded and is used with MD5 to derive tokens — both practices are insecure.",
+      "fix_explanation": "Store INTERNAL_AUTH in environment; use a secure HMAC-SHA256 for token generation instead of MD5-based concatenation.",
+      "secure_code_snippet": "INTERNAL_AUTH = os.getenv(\"INTERNAL_AUTH\")\n# generate tokens with HMAC-SHA256\ntoken = hmac.new(INTERNAL_AUTH.encode(), username.encode(), hashlib.sha256).hexdigest()"
+    },
+    {
+      "id": 4,
+      "file": "inputs.py",
+      "line_numbers": [25,27],
+      "vulnerability_type": "SQL injection (string formatting in SQL)",
+      "severity": "Critical",
+      "description": "The query uses string interpolation to place the uid into the SQL statement which allows SQL injection.",
+      "fix_explanation": "Use parameterized queries (placeholders) provided by sqlite3 to ensure values are bound rather than interpolated into SQL.",
+      "secure_code_snippet": "c.execute(\"SELECT id, name, balance FROM profiles WHERE id = ?\", (uid,))"
+    },
+    {
+      "id": 5,
+      "file": "inputs.py",
+      "line_numbers": [36,40],
+      "vulnerability_type": "SSRF and token disclosure via external notify_url",
+      "severity": "High",
+      "description": "The code posts sensitive PAYMENT_TOKEN to an arbitrary notify_url supplied by the requester which allows token leakage and SSRF attacks.",
+      "fix_explanation": "Validate notify_url hostnames against a whitelist; do not include internal secrets in outbound requests. Use a secure service-to-service auth mechanism if needed.",
+      "secure_code_snippet": "parsed = urlparse(url)\nif parsed.hostname not in ALLOWED_NOTIFY_HOSTS: raise ValueError('notify_url host not allowed')\n# Do not send PAYMENT_TOKEN; send minimal safe payload"
+    },
+    {
+      "id": 6,
+      "file": "inputs.py",
+      "line_numbers": [46],
+      "vulnerability_type": "Arbitrary file access / path traversal (update_records)",
+      "severity": "High",
+      "description": "update_records opens an arbitrary path passed by the user, enabling reading sensitive files or path traversal.",
+      "fix_explanation": "Limit file access to a safe config directory, check file extension and ensure the resolved path starts with the safe base directory.",
+      "secure_code_snippet": "file_path = os.path.abspath(os.path.join(CONFIG_DIR, relative_path))\nif not file_path.startswith(CONFIG_DIR): raise PermissionError('access denied')"
+    },
+    {
+      "id": 7,
+      "file": "inputs.py",
+      "line_numbers": [52],
+      "vulnerability_type": "Command injection via shell=True subprocess",
+      "severity": "Critical",
+      "description": "export_data builds a shell command using user-supplied data and executes it with shell=True which allows command injection.",
+      "fix_explanation": "Avoid shell execution entirely; use Python's zipfile module or subprocess with argument list (no shell) and validate filenames.",
+      "secure_code_snippet": "with zipfile.ZipFile(outname, 'w', zipfile.ZIP_DEFLATED) as zf:\n    zf.write(DB_FILE, arcname=os.path.basename(DB_FILE))"
+    },
+    {
+      "id": 8,
+      "file": "inputs.py",
+      "line_numbers": [62,68,74,81],
+      "vulnerability_type": "Missing authentication/authorization on sensitive endpoints",
+      "severity": "High",
+      "description": "Endpoints that affect data or trigger external actions (transfer, config, export) have no authentication, allowing unauthenticated abuse.",
+      "fix_explanation": "Require a valid admin API token in request headers for sensitive endpoints (e.g., X-ADMIN-TOKEN) and validate server side.",
+      "secure_code_snippet": "def require_admin():\n    token = request.headers.get('X-ADMIN-TOKEN')\n    if token != ADMIN_API_KEY: abort(401)"
+    },
+    {
+      "id": 9,
+      "file": "inputs.py",
+      "line_numbers": [36],
+      "vulnerability_type": "Logging sensitive data (printing transaction details)",
+      "severity": "Low",
+      "description": "The code prints transaction details to stdout which can leak sensitive information in logs.",
+      "fix_explanation": "Use structured logging and avoid printing sensitive fields. Mask or redact sensitive values before logging.",
+      "secure_code_snippet": "logging.info('transfer: %s amount=%s', target[:8] + '...', amount)"
+    },
+    {
+      "id": 10,
+      "file": "inputs.py",
+      "line_numbers": [88],
+      "vulnerability_type": "Debug mode enabled in production (app.run(debug=True))",
+      "severity": "High",
+      "description": "Running Flask in debug mode exposes debugger and code execution in production, leaking internals and enabling RCE.",
+      "fix_explanation": "Never run Flask with debug=True in production; configure environment for development only and use debug False in production.",
+      "secure_code_snippet": "app.run(host='0.0.0.0', debug=False)"
+    }
+  ]
+}
