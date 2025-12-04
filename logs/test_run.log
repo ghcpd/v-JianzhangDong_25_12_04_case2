@@ -1,0 +1,125 @@
+================================================================================
+SECURITY AUDIT TEST RUN LOG
+================================================================================
+Start Time: 2025-12-04 14:19:38
+Environment: windows
+Platform: Windows-11-10.0.26100-SP0
+Python Version: 3.14.0
+================================================================================
+
+================================================================================
+Test: inputs_backup.py
+Timestamp: 2025-12-04 14:19:38
+Return Code: 1
+================================================================================
+========================================
+Security Audit Test Suite
+========================================
+
+Setting up test database...
+Test database created successfully.
+
+Running: Check inputs.py exists
+[32m鉁?PASSED: Check inputs.py exists[0m
+
+Running: Check inputs_backup.py exists
+[32m鉁?PASSED: Check inputs_backup.py exists[0m
+
+Running: Verify no hardcoded secrets in inputs.py
+[31m鉁?FAILED: Verify no hardcoded secrets in inputs.py[0m
+
+Running: Verify parameterized SQL queries
+[31m鉁?FAILED: Verify parameterized SQL queries[0m
+
+Running: Verify shell=False in subprocess
+[31m鉁?FAILED: Verify shell=False in subprocess[0m
+
+Running: Verify SSRF protection exists
+[31m鉁?FAILED: Verify SSRF protection exists[0m
+
+Running: Verify path traversal protection
+[31m鉁?FAILED: Verify path traversal protection[0m
+
+Running: Verify SHA-256 usage
+[31m鉁?FAILED: Verify SHA-256 usage[0m
+
+Running: Verify Python syntax
+[32m鉁?PASSED: Verify Python syntax[0m
+
+Running: Verify security imports
+[31m鉁?FAILED: Verify security imports[0m
+
+========================================
+Test Summary
+========================================
+Tests Passed: 3
+Tests Failed: 7
+
+Status: TEST FAILED
+
+--------------------------------------------------------------------------------
+Status: TEST FAILED
+================================================================================
+
+================================================================================
+Test: inputs.py
+Timestamp: 2025-12-04 14:19:39
+Return Code: 0
+================================================================================
+========================================
+Security Audit Test Suite
+========================================
+
+Setting up test database...
+Test database created successfully.
+
+Running: Check inputs.py exists
+[32m鉁?PASSED: Check inputs.py exists[0m
+
+Running: Check inputs_backup.py exists
+[32m鉁?PASSED: Check inputs_backup.py exists[0m
+
+Running: Verify no hardcoded secrets in inputs.py
+[32m鉁?PASSED: Verify no hardcoded secrets in inputs.py[0m
+
+Running: Verify parameterized SQL queries
+[32m鉁?PASSED: Verify parameterized SQL queries[0m
+
+Running: Verify shell=False in subprocess
+[32m鉁?PASSED: Verify shell=False in subprocess[0m
+
+Running: Verify SSRF protection exists
+[32m鉁?PASSED: Verify SSRF protection exists[0m
+
+Running: Verify path traversal protection
+[32m鉁?PASSED: Verify path traversal protection[0m
+
+Running: Verify SHA-256 usage
+[32m鉁?PASSED: Verify SHA-256 usage[0m
+
+Running: Verify Python syntax
+[32m鉁?PASSED: Verify Python syntax[0m
+
+Running: Verify security imports
+[32m鉁?PASSED: Verify security imports[0m
+
+========================================
+Test Summary
+========================================
+Tests Passed: 10
+Tests Failed: 0
+
+Status: TEST PASSED
+
+--------------------------------------------------------------------------------
+Status: TEST PASSED
+================================================================================
+
+
+================================================================================
+FINAL TEST SUMMARY
+================================================================================
+End Time: 2025-12-04 14:19:39
+All security tests PASSED!
+Final Status: TEST PASSED
+================================================================================

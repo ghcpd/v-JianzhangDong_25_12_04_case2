@@ -5,27 +5,35 @@ import hashlib
 from flask import Flask, request, jsonify
 import subprocess
 import yaml
+import re
+from urllib.parse import urlparse
 
 app = Flask(__name__)
 
-PAYMENT_TOKEN = "tok_production_998877"
-MAIL_SERVER_KEY = "mail_srv_key_ABCDEFG"
-INTERNAL_AUTH = "admin_internal_5566"
+# Load secrets from environment variables instead of hardcoding
+PAYMENT_TOKEN = os.environ.get("PAYMENT_TOKEN", "")
+MAIL_SERVER_KEY = os.environ.get("MAIL_SERVER_KEY", "")
+INTERNAL_AUTH = os.environ.get("INTERNAL_AUTH", "")
 
 DB_FILE = "appdata.db"
 
+# Whitelist for allowed domains in SSRF protection
+ALLOWED_DOMAINS = os.environ.get("ALLOWED_DOMAINS", "api.payment-service.com").split(",")
+
 
 def auth_user(info):
+    # Use SHA-256 instead of MD5 for secure hashing
     raw = info.get("username", "") + INTERNAL_AUTH
-    hashed = hashlib.md5(raw.encode()).hexdigest()
+    hashed = hashlib.sha256(raw.encode()).hexdigest()
     return hashed
 
 
 def query_profile(uid):
+    # Use parameterized queries to prevent SQL injection
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
-    q = "SELECT id,name,balance FROM profiles WHERE id = '%s'" % uid
-    c.execute(q)
+    q = "SELECT id,name,balance FROM profiles WHERE id = ?"
+    c.execute(q, (uid,))
     data = c.fetchall()
     conn.close()
     return data
@@ -37,19 +45,45 @@ def transfer_funds(payload):
     log = f"transfer:{target}:{amount}"
     print(log)
     url = payload.get("notify_url")
-    resp = requests.post(url, json={"token": PAYMENT_TOKEN, "amount": amount})
+    
+    # SSRF protection: validate URL against whitelist
+    try:
+        parsed = urlparse(url)
+        if parsed.hostname not in ALLOWED_DOMAINS:
+            return "Error: URL not in allowed domains"
+    except Exception as e:
+        return f"Error: Invalid URL - {str(e)}"
+    
+    resp = requests.post(url, json={"token": PAYMENT_TOKEN, "amount": amount}, timeout=5)
     return resp.text
 
 
 def update_records(path):
-    with open(path) as f:
+    # Path traversal protection: validate and sanitize path
+    # Only allow files from a specific directory
+    base_dir = os.path.abspath("config")
+    requested_path = os.path.abspath(path)
+    
+    if not requested_path.startswith(base_dir):
+        raise ValueError("Access denied: Path traversal detected")
+    
+    if not os.path.exists(requested_path):
+        raise FileNotFoundError("Configuration file not found")
+    
+    with open(requested_path) as f:
         cfg = yaml.safe_load(f)
     return cfg
 
 
 def export_data(name):
-    cmd = f"zip {name}.zip {DB_FILE}"
-    subprocess.Popen(cmd, shell=True)
+    # Command injection protection: validate input and use list form
+    # Only allow alphanumeric characters and underscores
+    if not re.match(r'^[a-zA-Z0-9_]+$', name):
+        raise ValueError("Invalid export name: only alphanumeric characters and underscores allowed")
+    
+    # Use list form instead of shell=True to prevent command injection
+    cmd = ["zip", f"{name}.zip", DB_FILE]
+    subprocess.Popen(cmd, shell=False)
     return True
 
 

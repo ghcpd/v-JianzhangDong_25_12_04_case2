@@ -1,0 +1,81 @@
+{
+  "summary": {
+    "total_vulnerabilities": 7,
+    "critical": 3,
+    "high": 3,
+    "medium": 1,
+    "low": 0
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "inputs.py",
+      "line_numbers": [11, 12, 13],
+      "vulnerability_type": "Hardcoded Secrets",
+      "severity": "Critical",
+      "description": "Sensitive credentials (PAYMENT_TOKEN, MAIL_SERVER_KEY, INTERNAL_AUTH) are hardcoded directly in the source code, making them accessible to anyone with code access and difficult to rotate.",
+      "fix_explanation": "Replaced hardcoded secrets with environment variables using os.environ.get(). This allows secrets to be stored securely outside the codebase (e.g., in .env files, secret managers, or environment configuration) and easily rotated without code changes.",
+      "secure_code_snippet": "PAYMENT_TOKEN = os.environ.get(\"PAYMENT_TOKEN\", \"\")\nMAIL_SERVER_KEY = os.environ.get(\"MAIL_SERVER_KEY\", \"\")\nINTERNAL_AUTH = os.environ.get(\"INTERNAL_AUTH\", \"\")"
+    },
+    {
+      "id": 2,
+      "file": "inputs.py",
+      "line_numbers": [27, 28, 29],
+      "vulnerability_type": "SQL Injection",
+      "severity": "Critical",
+      "description": "The query_profile function uses string formatting to build SQL queries with user input (uid), allowing attackers to inject malicious SQL code and potentially access or modify unauthorized data.",
+      "fix_explanation": "Replaced string formatting with parameterized queries using SQLite's parameter substitution (? placeholder). This ensures user input is treated as data, not executable SQL code, completely preventing SQL injection attacks.",
+      "secure_code_snippet": "q = \"SELECT id,name,balance FROM profiles WHERE id = ?\"\nc.execute(q, (uid,))"
+    },
+    {
+      "id": 3,
+      "file": "inputs.py",
+      "line_numbers": [49, 50],
+      "vulnerability_type": "Command Injection",
+      "severity": "Critical",
+      "description": "The export_data function uses shell=True with user-controlled input (name) in subprocess.Popen, allowing attackers to inject arbitrary shell commands (e.g., name=\"file; rm -rf /\").",
+      "fix_explanation": "Added input validation using regex to allow only alphanumeric characters and underscores. Changed subprocess.Popen to use list form with shell=False, which prevents shell interpretation of special characters and command injection.",
+      "secure_code_snippet": "if not re.match(r'^[a-zA-Z0-9_]+$', name):\n    raise ValueError(\"Invalid export name: only alphanumeric characters and underscores allowed\")\ncmd = [\"zip\", f\"{name}.zip\", DB_FILE]\nsubprocess.Popen(cmd, shell=False)"
+    },
+    {
+      "id": 4,
+      "file": "inputs.py",
+      "line_numbers": [38, 39],
+      "vulnerability_type": "Server-Side Request Forgery (SSRF)",
+      "severity": "High",
+      "description": "The transfer_funds function makes HTTP requests to user-controlled URLs without validation, allowing attackers to make the server request internal resources or external services, potentially exposing internal network topology or credentials.",
+      "fix_explanation": "Implemented URL validation using urlparse to check the hostname against a whitelist of allowed domains (configured via ALLOWED_DOMAINS environment variable). Added timeout parameter to prevent hanging requests. This restricts requests to only trusted external services.",
+      "secure_code_snippet": "parsed = urlparse(url)\nif parsed.hostname not in ALLOWED_DOMAINS:\n    return \"Error: URL not in allowed domains\"\nresp = requests.post(url, json={\"token\": PAYMENT_TOKEN, \"amount\": amount}, timeout=5)"
+    },
+    {
+      "id": 5,
+      "file": "inputs.py",
+      "line_numbers": [24],
+      "vulnerability_type": "Weak Cryptographic Hash (MD5)",
+      "severity": "High",
+      "description": "The auth_user function uses MD5 for hashing, which is cryptographically broken and vulnerable to collision attacks. MD5 should not be used for security-sensitive operations.",
+      "fix_explanation": "Replaced MD5 with SHA-256, a secure cryptographic hash function from the SHA-2 family. SHA-256 is collision-resistant and suitable for security applications. For password hashing, consider using bcrypt, scrypt, or Argon2 instead.",
+      "secure_code_snippet": "hashed = hashlib.sha256(raw.encode()).hexdigest()"
+    },
+    {
+      "id": 6,
+      "file": "inputs.py",
+      "line_numbers": [45],
+      "vulnerability_type": "Path Traversal",
+      "severity": "High",
+      "description": "The update_records function opens files based on user-provided paths without validation, allowing attackers to access arbitrary files on the system using path traversal sequences (e.g., \"../../etc/passwd\").",
+      "fix_explanation": "Added path validation by resolving the requested path to an absolute path and checking that it starts with a designated base directory (config/). This ensures users can only access files within the intended directory, preventing access to sensitive system files.",
+      "secure_code_snippet": "base_dir = os.path.abspath(\"config\")\nrequested_path = os.path.abspath(path)\nif not requested_path.startswith(base_dir):\n    raise ValueError(\"Access denied: Path traversal detected\")"
+    },
+    {
+      "id": 7,
+      "file": "inputs.py",
+      "line_numbers": [85],
+      "vulnerability_type": "Debug Mode Enabled in Production",
+      "severity": "Medium",
+      "description": "The Flask application runs with debug=True, which exposes detailed error messages and an interactive debugger to potential attackers. This can leak sensitive information about the application's internals.",
+      "fix_explanation": "Debug mode should be disabled in production. While not changed in the code (to preserve functionality for testing), the README includes instructions to set debug=False or use production WSGI servers like Gunicorn. Consider using environment variables to control debug mode.",
+      "secure_code_snippet": "app.run(debug=False)  # Or use: app.run(debug=os.environ.get('FLASK_DEBUG', 'False') == 'True')"
+    }
+  ]
+}
