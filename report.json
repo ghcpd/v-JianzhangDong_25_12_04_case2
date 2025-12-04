@@ -1,0 +1,81 @@
+{
+  "summary": {
+    "total_vulnerabilities": 7,
+    "critical": 5,
+    "high": 2,
+    "medium": 0,
+    "low": 0
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "inputs.py",
+      "line_numbers": [24],
+      "vulnerability_type": "SQL Injection",
+      "severity": "Critical",
+      "description": "The query_profile() function uses string formatting with user input to construct SQL queries. An attacker can inject malicious SQL code through the uid parameter (e.g., uid = \"' OR '1'='1\") to bypass authentication or extract sensitive data.",
+      "fix_explanation": "Replaced string formatting with parameterized queries using the ? placeholder and tuple binding. This ensures user input is treated as data, not executable SQL. Added input validation to accept only numeric UIDs. Wrapped in try-except for proper error handling and logging.",
+      "secure_code_snippet": "q = \"SELECT id,name,balance FROM profiles WHERE id = ?\"\nc.execute(q, (uid,))"
+    },
+    {
+      "id": 2,
+      "file": "inputs.py",
+      "line_numbers": [11],
+      "vulnerability_type": "Hardcoded Secret - Payment Token",
+      "severity": "Critical",
+      "description": "The PAYMENT_TOKEN is hardcoded in the source code as 'tok_production_998877'. This exposes the payment system token to anyone with access to the source repository, enabling unauthorized payment transactions.",
+      "fix_explanation": "Replaced hardcoded token with environment variable using os.getenv(). Secrets should never be committed to version control. Developers should set PAYMENT_TOKEN in their .env file or deployment environment.",
+      "secure_code_snippet": "PAYMENT_TOKEN = os.getenv(\"PAYMENT_TOKEN\", \"\")"
+    },
+    {
+      "id": 3,
+      "file": "inputs.py",
+      "line_numbers": [12],
+      "vulnerability_type": "Hardcoded Secret - Mail Server Key",
+      "severity": "Critical",
+      "description": "The MAIL_SERVER_KEY is hardcoded as 'mail_srv_key_ABCDEFG'. This exposes the mail server credentials, allowing attackers to intercept or send unauthorized emails.",
+      "fix_explanation": "Replaced hardcoded key with environment variable using os.getenv(). Store mail server keys securely in environment configuration, not in source code.",
+      "secure_code_snippet": "MAIL_SERVER_KEY = os.getenv(\"MAIL_SERVER_KEY\", \"\")"
+    },
+    {
+      "id": 4,
+      "file": "inputs.py",
+      "line_numbers": [13],
+      "vulnerability_type": "Hardcoded Secret - Internal Authentication Key",
+      "severity": "Critical",
+      "description": "The INTERNAL_AUTH key is hardcoded as 'admin_internal_5566'. This internal authentication credential is exposed to anyone accessing the source code, compromising the entire authentication system.",
+      "fix_explanation": "Replaced hardcoded key with environment variable using os.getenv(). Implement proper authentication mechanisms using industry-standard libraries like Flask-JWT or similar.",
+      "secure_code_snippet": "INTERNAL_AUTH = os.getenv(\"INTERNAL_AUTH\", \"\")"
+    },
+    {
+      "id": 5,
+      "file": "inputs.py",
+      "line_numbers": [41],
+      "vulnerability_type": "Command Injection",
+      "severity": "Critical",
+      "description": "The export_data() function constructs shell commands using user input (name parameter) and executes with shell=True. An attacker can inject shell commands (e.g., name = \"test; rm -rf /\") to execute arbitrary code.",
+      "fix_explanation": "Replaced shell command string with subprocess.run() using a list-based argument array, avoiding shell=True. Added input validation to only allow alphanumeric, underscore, and hyphen characters. Added timeout and error handling.",
+      "secure_code_snippet": "cmd = [\"zip\", f\"{name}.zip\", DB_FILE]\nsubprocess.run(cmd, check=True, timeout=30, capture_output=True)"
+    },
+    {
+      "id": 6,
+      "file": "inputs.py",
+      "line_numbers": [37],
+      "vulnerability_type": "Path Traversal / Insecure Deserialization",
+      "severity": "High",
+      "description": "The update_records() function accepts arbitrary file paths without validation. An attacker can use path traversal (e.g., path = '../../../etc/passwd') to read sensitive files. Additionally, YAML deserialization without restrictions can be exploited.",
+      "fix_explanation": "Added path validation using pathlib.Path.resolve() to ensure requested files are within an allowed './configs' directory. Implemented symlink and path traversal prevention by comparing resolved paths. Already used yaml.safe_load() which is secure (avoids arbitrary code execution).",
+      "secure_code_snippet": "config_dir = Path(\"./configs\").resolve()\nfile_path = config_dir.joinpath(path).resolve()\nif not str(file_path).startswith(str(config_dir)):\n    return {\"error\": \"Invalid path\"}"
+    },
+    {
+      "id": 7,
+      "file": "inputs.py",
+      "line_numbers": [49, 26],
+      "vulnerability_type": "Weak Cryptography Algorithm",
+      "severity": "High",
+      "description": "The auth_user() function uses MD5 for hashing (line 26), which is cryptographically broken and unsuitable for password hashing. MD5 is fast to compute and collision vulnerabilities exist, making it vulnerable to precomputation attacks.",
+      "fix_explanation": "Replaced MD5 with SHA-256, a more secure cryptographic hash. However, for production authentication, consider using bcrypt, argon2, or scrypt with salt. Additionally, fixed transfer_funds() to use proper error handling and validation instead of printing to console.",
+      "secure_code_snippet": "hashed = hashlib.sha256(raw.encode()).hexdigest()"
+    }
+  ]
+}
