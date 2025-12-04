@@ -1,0 +1,22 @@
+[2025-12-04T07:04:45.625986] Detected platform: win32
+[2025-12-04T07:04:45.626596] START ['run_test.bat']
+[2025-12-04T07:04:45.783555] OUTPUT VULNERABLE patterns present in input_backup.py
+Fixed secure patterns present in inputs.py
+ALL TESTS COMPLETED
+
+[2025-12-04T07:04:45.784209] END ['run_test.bat'] status=0 duration=0.156753s
+[2025-12-04T07:04:45.784737] TEST PASSED
+[2025-12-04T07:08:52.989928] Detected platform: win32
+[2025-12-04T07:08:52.990589] Starting test for input_backup.py
+[2025-12-04T07:08:52.991356] START ['python', 'run_tests.py', 'input_backup.py', 'vulnerable']
+[2025-12-04T07:08:53.036188] OUTPUT VULNERABLE patterns present in input_backup.py
+
+[2025-12-04T07:08:53.036570] END ['python', 'run_tests.py', 'input_backup.py', 'vulnerable'] status=0 duration=0.044821s
+[2025-12-04T07:08:53.037071] input_backup.py: TEST PASSED (exit=0)
+[2025-12-04T07:08:53.037549] Starting test for inputs.py
+[2025-12-04T07:08:53.037865] START ['python', 'run_tests.py', 'inputs.py', 'fixed']
+[2025-12-04T07:08:53.079827] OUTPUT Fixed secure patterns present in inputs.py
+
+[2025-12-04T07:08:53.080172] END ['python', 'run_tests.py', 'inputs.py', 'fixed'] status=0 duration=0.041995s
+[2025-12-04T07:08:53.080474] inputs.py: TEST PASSED (exit=0)
+[2025-12-04T07:08:53.080902] TEST PASSED
