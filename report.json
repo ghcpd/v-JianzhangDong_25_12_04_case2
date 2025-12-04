@@ -1,0 +1,91 @@
+{
+  "summary": {
+    "total_vulnerabilities": 8,
+    "critical": 2,
+    "high": 4,
+    "medium": 1,
+    "low": 1
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "inputs.py",
+      "line_numbers": [11,12,13],
+      "vulnerability_type": "Hardcoded secrets",
+      "severity": "Critical",
+      "description": "API keys and internal auth are hardcoded in the source (PAYMENT_TOKEN, MAIL_SERVER_KEY, INTERNAL_AUTH).",
+      "fix_explanation": "Secrets were moved to environment variables and the code now reads them from the environment. This prevents leaking secrets in source control.",
+      "secure_code_snippet": "PAYMENT_TOKEN = os.environ.get(\"PAYMENT_TOKEN\")"
+    },
+    {
+      "id": 2,
+      "file": "inputs.py",
+      "line_numbers": [19,20],
+      "vulnerability_type": "Weak hashing",
+      "severity": "High",
+      "description": "MD5 is used for hashing authentication tokens which is cryptographically weak.",
+      "fix_explanation": "Replaced MD5 with SHA-256 for stronger hashing.",
+      "secure_code_snippet": "hashed = hashlib.sha256(raw.encode()).hexdigest()"
+    },
+    {
+      "id": 3,
+      "file": "inputs.py",
+      "line_numbers": [27],
+      "vulnerability_type": "SQL Injection",
+      "severity": "Critical",
+      "description": "SQL query is constructed with string interpolation allowing injection via `uid`.",
+      "fix_explanation": "Use parameterized SQL queries with placeholders to prevent injection.",
+      "secure_code_snippet": "c.execute(\"SELECT id,name,balance FROM profiles WHERE id = ?\", (uid,))"
+    },
+    {
+      "id": 4,
+      "file": "inputs.py",
+      "line_numbers": [39,40],
+      "vulnerability_type": "SSRF / Unsafe URL usage",
+      "severity": "High",
+      "description": "The code posts to an arbitrary `notify_url` supplied by users, enabling SSRF or unwanted network requests.",
+      "fix_explanation": "Added basic URL validation to allow only http(s) schemas and reject invalid URLs.",
+      "secure_code_snippet": "if not is_valid_url(url): raise ValueError(\"invalid notify_url\")"
+    },
+    {
+      "id": 5,
+      "file": "inputs.py",
+      "line_numbers": [51,52],
+      "vulnerability_type": "Command injection / unsafe subprocess",
+      "severity": "High",
+      "description": "Using shell=True with formatted command to run `zip` allows command injection via `name`.",
+      "fix_explanation": "Replaced shell call with Python `zipfile` module and validated `name` to prevent path traversal and injection.",
+      "secure_code_snippet": "with zipfile.ZipFile(out_file, \"w\") as zf: zf.write(DB_FILE)"
+    },
+    {
+      "id": 6,
+      "file": "inputs.py",
+      "line_numbers": [45,46],
+      "vulnerability_type": "Arbitrary file read (YAML load)",
+      "severity": "Medium",
+      "description": "update_records() accepts arbitrary file paths and loads YAML. Path traversal can expose sensitive files.",
+      "fix_explanation": "Restricted config file paths to a configured `CONFIG_DIR` and validated path components before loading safely with `safe_load`.",
+      "secure_code_snippet": "full = os.path.join(base_dir, path); with open(full, 'r') as f: cfg = yaml.safe_load(f)"
+    },
+    {
+      "id": 7,
+      "file": "inputs.py",
+      "line_numbers": [34,40],
+      "vulnerability_type": "Missing request timeout",
+      "severity": "Low",
+      "description": "HTTP requests in `transfer_funds` had no timeout or error handling which can hang the application.",
+      "fix_explanation": "Added `timeout` and `resp.raise_for_status()` and wrapped in try/except to handle network errors.",
+      "secure_code_snippet": "resp = requests.post(url, json={\"token\": PAYMENT_TOKEN, \"amount\": amount}, timeout=5); resp.raise_for_status()"
+    },
+    {
+      "id": 7,
+      "file": "inputs.py",
+      "line_numbers": [87,88],
+      "vulnerability_type": "Insecure Flask debug mode",
+      "severity": "Low",
+      "description": "Running Flask with debug=True can leak sensitive data and enable code execution.",
+      "fix_explanation": "Disabled debug mode and made host/port configurable via environment variables.",
+      "secure_code_snippet": "app.run(host=\"0.0.0.0\", port=int(os.environ.get(\"PORT\",5000)), debug=False)"
+    }
+  ]
+}
