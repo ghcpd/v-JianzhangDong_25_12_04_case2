@@ -1,0 +1,120 @@
+{
+  "summary": {
+    "total_vulnerabilities": 7,
+    "critical": 2,
+    "high": 4,
+    "medium": 1,
+    "low": 0
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "inputs.py",
+      "line_numbers": [
+        11,
+        12,
+        13
+      ],
+      "vulnerability_type": "Hardcoded secrets",
+      "severity": "High",
+      "description": "PAYMENT_TOKEN, MAIL_SERVER_KEY, and INTERNAL_AUTH are hardcoded in source, risking leakage and misuse.",
+      "fix_explanation": "Load secrets from environment variables or a secrets manager and fail fast if missing.",
+      "secure_code_snippet": "PAYMENT_TOKEN = os.environ.get('PAYMENT_TOKEN')\nMAIL_SERVER_KEY = os.environ.get('MAIL_SERVER_KEY')\nINTERNAL_AUTH_SECRET = os.environ.get('INTERNAL_AUTH_SECRET')"
+    },
+    {
+      "id": 2,
+      "file": "inputs.py",
+      "line_numbers": [
+        18,
+        19,
+        20,
+        21
+      ],
+      "vulnerability_type": "Weak authentication / insecure hashing",
+      "severity": "High",
+      "description": "auth_user uses MD5 with a static salt; tokens are predictable and weak.",
+      "fix_explanation": "Use HMAC-SHA256 with a secret key from configuration to generate tokens.",
+      "secure_code_snippet": "token = hmac.new(secret.encode(), username.encode(), hashlib.sha256).hexdigest()"
+    },
+    {
+      "id": 3,
+      "file": "inputs.py",
+      "line_numbers": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
+      ],
+      "vulnerability_type": "SQL Injection",
+      "severity": "Critical",
+      "description": "query_profile concatenates untrusted input into SQL, allowing injection.",
+      "fix_explanation": "Validate IDs and use parameterized queries with placeholders.",
+      "secure_code_snippet": "c.execute(\"SELECT id,name,balance FROM profiles WHERE id = ?\", (int(uid),))"
+    },
+    {
+      "id": 4,
+      "file": "inputs.py",
+      "line_numbers": [
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41
+      ],
+      "vulnerability_type": "SSRF / Unvalidated outbound request",
+      "severity": "High",
+      "description": "transfer_funds posts to arbitrary URLs from client input without validation or timeouts.",
+      "fix_explanation": "Whitelist allowed hosts, require HTTPS, and set request timeouts with error handling.",
+      "secure_code_snippet": "parsed = urlparse(url); assert parsed.scheme == 'https' and host in ALLOWED_NOTIFY_HOSTS; requests.post(url, timeout=5)"
+    },
+    {
+      "id": 5,
+      "file": "inputs.py",
+      "line_numbers": [
+        44,
+        45,
+        46,
+        47
+      ],
+      "vulnerability_type": "Arbitrary file read / path traversal",
+      "severity": "High",
+      "description": "update_records reads any file path supplied by the client, enabling traversal and sensitive file exposure.",
+      "fix_explanation": "Restrict reads to a designated config directory, validate extension, and resolve paths safely.",
+      "secure_code_snippet": "base = Path(CONFIG_DIR).resolve(); candidate = (base / path).resolve(); assert str(candidate).startswith(str(base))"
+    },
+    {
+      "id": 6,
+      "file": "inputs.py",
+      "line_numbers": [
+        50,
+        51,
+        52,
+        53
+      ],
+      "vulnerability_type": "Command injection",
+      "severity": "Critical",
+      "description": "export_data builds a shell command with user input and runs it via shell=True, allowing arbitrary command execution.",
+      "fix_explanation": "Sanitize filenames and use Python's zipfile module instead of shelling out.",
+      "secure_code_snippet": "with ZipFile(zip_path, 'w') as zf: zf.write(DB_FILE, arcname=Path(DB_FILE).name)"
+    },
+    {
+      "id": 7,
+      "file": "inputs.py",
+      "line_numbers": [
+        87,
+        88
+      ],
+      "vulnerability_type": "Debug mode enabled in production",
+      "severity": "Medium",
+      "description": "app.run(debug=True) exposes Werkzeug debugger with code execution in production deployments.",
+      "fix_explanation": "Control debug mode via environment variables and default to debug off.",
+      "secure_code_snippet": "debug = _strtobool(os.environ.get('FLASK_DEBUG', '0')); app.run(debug=debug, host=host, port=port)"
+    }
+  ]
+}
