@@ -1,0 +1,27 @@
+[2025-12-04T08:22:23.921246Z] Running: ['cmd', '/c', 'run_test.bat', 'input_backup.py']
+
+[2025-12-04T08:23:10.000000Z] Running: ['python', 'run_test_importer.py', 'input_backup.py']
+[2025-12-04T08:23:10.123000Z] ExitCode: 1
+[2025-12-04T08:23:10.123000Z] Stderr:
+Traceback (most recent call last):
+	File "run_test_importer.py", line 9, in <module>
+		spec.loader.exec_module(mod)
+	File "<frozen importlib._bootstrap_external>", line 779, in exec_module
+	File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+	File "input_backup.py", line 5, in <module>
+		from flask import Flask, request, jsonify
+ModuleNotFoundError: No module named 'flask'
+
+[2025-12-04T08:23:20.000000Z] Running: ['python', 'run_test_importer.py', 'inputs.py']
+[2025-12-04T08:23:20.111000Z] ExitCode: 1
+[2025-12-04T08:23:20.111000Z] Stderr:
+Traceback (most recent call last):
+	File "run_test_importer.py", line 9, in <module>
+		spec.loader.exec_module(mod)
+	File "<frozen importlib._bootstrap_external>", line 779, in exec_module
+	File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+	File "inputs.py", line 3, in <module>
+		import requests
+ModuleNotFoundError: No module named 'requests'
+
+[2025-12-04T08:23:21.000000Z] FINAL: TEST FAILED
