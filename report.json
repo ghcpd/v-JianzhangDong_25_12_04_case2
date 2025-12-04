@@ -1,0 +1,91 @@
+{
+  "summary": {
+    "total_vulnerabilities": 8,
+    "critical": 3,
+    "high": 2,
+    "medium": 2,
+    "low": 1
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "input.py",
+      "line_numbers": [11,12,13],
+      "vulnerability_type": "Hardcoded secrets/credentials",
+      "severity": "Critical",
+      "description": "Static API tokens and internal authentication keys are hardcoded in the source, which risks leakage via version control or binary distribution.",
+      "fix_explanation": "Moved secrets to environment variables; code now reads PAYMENT_TOKEN, MAIL_SERVER_KEY, and INTERNAL_AUTH from OS environment and fails safely if missing.",
+      "secure_code_snippet": "PAYMENT_TOKEN = os.getenv('PAYMENT_TOKEN')\nMAIL_SERVER_KEY = os.getenv('MAIL_SERVER_KEY')\nINTERNAL_AUTH = os.getenv('INTERNAL_AUTH')"
+    },
+    {
+      "id": 2,
+      "file": "input.py",
+      "line_numbers": [27],
+      "vulnerability_type": "SQL injection (unsafe string formatting)",
+      "severity": "Critical",
+      "description": "User-supplied 'id' is interpolated directly into SQL resulting in SQL injection risk.",
+      "fix_explanation": "Replaced string interpolation with a parameterized query (using ? placeholder) and input validation.",
+      "secure_code_snippet": "c.execute(\"SELECT id,name,balance FROM profiles WHERE id = ?\", (uid,))"
+    },
+    {
+      "id": 3,
+      "file": "input.py",
+      "line_numbers": [51,52],
+      "vulnerability_type": "Command injection / shell execution",
+      "severity": "Critical",
+      "description": "Subprocess is invoked with shell=True and user-controlled input (filename), enabling command injection.",
+      "fix_explanation": "Removed shell invocation and used Python's zipfile module to create archives safely and sanitized user-provided names.",
+      "secure_code_snippet": "with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:\n    zf.write(DB_FILE, arcname=os.path.basename(DB_FILE))"
+    },
+    {
+      "id": 4,
+      "file": "input.py",
+      "line_numbers": [45,46],
+      "vulnerability_type": "Path traversal / arbitrary file read",
+      "severity": "High",
+      "description": "User-controlled path is opened directly allowing reading of files outside intended directory.",
+      "fix_explanation": "Constrain config file access to a dedicated CONFIG_DIR, sanitize filename using os.path.basename and validate resolved path resides inside CONFIG_DIR.",
+      "secure_code_snippet": "safe_name = os.path.basename(filename)\ntarget_path = os.path.join(CONFIG_DIR, safe_name)\n# validate commonpath...\nwith open(target_path) as f:\n    cfg = yaml.safe_load(f)"
+    },
+    {
+      "id": 5,
+      "file": "input.py",
+      "line_numbers": [39,40,41],
+      "vulnerability_type": "Server-Side Request Forgery (SSRF) and unsafe external calls",
+      "severity": "High",
+      "description": "The application posts to a notify_url supplied by the user without validation; an attacker could trigger requests to internal services.",
+      "fix_explanation": "Validated notify_url using urlparse and restricted hosts using ALLOWED_NOTIFY_HOSTS environment variable; added timeouts and exception handling.",
+      "secure_code_snippet": "parsed = urlparse(url)\nif ALLOWED_NOTIFY_HOSTS and parsed.hostname not in ALLOWED_NOTIFY_HOSTS: raise ValueError('Host not allowed')\nresp = requests.post(url, json={'token': PAYMENT_TOKEN, 'amount': amount}, timeout=5)"
+    },
+    {
+      "id": 6,
+      "file": "input.py",
+      "line_numbers": [18,19,20],
+      "vulnerability_type": "Weak cryptography (MD5) and predictable secret usage",
+      "severity": "Medium",
+      "description": "Authentication used MD5 hashing and concatenated a static secret, which is weak and predictable.",
+      "fix_explanation": "Switched to HMAC-SHA256 using the INTERNAL_AUTH secret and secure digest functions.",
+      "secure_code_snippet": "digest = hmac.new(INTERNAL_AUTH.encode(), username.encode(), hashlib.sha256).hexdigest()"
+    },
+    {
+      "id": 7,
+      "file": "input.py",
+      "line_numbers": [37,38],
+      "vulnerability_type": "Insecure logging of sensitive transfer data",
+      "severity": "Low",
+      "description": "Transfer details were printed to stdout which may leak sensitive information to logs.",
+      "fix_explanation": "Avoid printing sensitive transfer data; use structured logs with redaction and proper log levels (not implemented here to keep minimal changes).",
+      "secure_code_snippet": "# Avoid printing full transfer details; log minimally or not at all"
+    },
+    {
+      "id": 8,
+      "file": "input.py",
+      "line_numbers": [88],
+      "vulnerability_type": "Debug mode enabled in production",
+      "severity": "Medium",
+      "description": "app.run(debug=True) was enabled which can expose interactive debugger and sensitive internals.",
+      "fix_explanation": "Require explicit DEBUG environment flag to enable debug server; default to non-debug mode.",
+      "secure_code_snippet": "if os.getenv('DEBUG', '0') == '1':\n    app.run(debug=True)\nelse:\n    app.run()"
+    }
+  ]
+}
