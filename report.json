@@ -1,0 +1,91 @@
+{
+  "summary": {
+    "total_vulnerabilities": 8,
+    "critical": 2,
+    "high": 5,
+    "medium": 1,
+    "low": 0
+  },
+  "details": [
+    {
+      "id": 1,
+      "file": "input.py",
+      "line_numbers": [11,12,13],
+      "vulnerability_type": "Hardcoded secrets",
+      "severity": "High",
+      "description": "Static API keys and tokens are present in source code.",
+      "fix_explanation": "Moved secrets to environment variables and made runtime checks to avoid embedding credentials in code.",
+      "secure_code_snippet": "PAYMENT_TOKEN = os.environ.get('PAYMENT_TOKEN')"
+    },
+    {
+      "id": 2,
+      "file": "input.py",
+      "line_numbers": [18,19,20],
+      "vulnerability_type": "Weak hashing (MD5)",
+      "severity": "High",
+      "description": "MD5 is used to derive an authentication token which is cryptographically weak and vulnerable to collision attacks.",
+      "fix_explanation": "Replaced MD5 with HMAC-SHA256 using a secret key from environment variables.",
+      "secure_code_snippet": "token = hmac.new(INTERNAL_AUTH.encode(), username.encode(), hashlib.sha256).hexdigest()"
+    },
+    {
+      "id": 3,
+      "file": "input.py",
+      "line_numbers": [24,25,26,27,28],
+      "vulnerability_type": "SQL Injection",
+      "severity": "Critical",
+      "description": "SQL query is built using string interpolation with user input, allowing SQL injection.",
+      "fix_explanation": "Use parameterized queries and validate input as integer before use.",
+      "secure_code_snippet": "q = \"SELECT id,name,balance FROM profiles WHERE id = ?\"\n c.execute(q, (uid_int,))"
+    },
+    {
+      "id": 4,
+      "file": "input.py",
+      "line_numbers": [34,35,36,37,38,39,40],
+      "vulnerability_type": "SSRF / Unvalidated external request",
+      "severity": "High",
+      "description": "The application posts to an arbitrary notify_url supplied by the user, enabling server-side request forgery.",
+      "fix_explanation": "Validate notify_url against a whitelist, require HTTPS, and use a request timeout and error handling.",
+      "secure_code_snippet": "if not is_allowed_notify_url(url): raise ValueError('notify_url not allowed')\nresp = requests.post(url, json={...}, timeout=5)"
+    },
+    {
+      "id": 5,
+      "file": "input.py",
+      "line_numbers": [50,51,52],
+      "vulnerability_type": "Command Injection",
+      "severity": "Critical",
+      "description": "Subprocess is invoked with shell=True and includes user-controlled data in a command string.",
+      "fix_explanation": "Use Python's zipfile module to create archives safely; avoid shell=True.",
+      "secure_code_snippet": "with zipfile.ZipFile(zip_path, 'w') as zf: zf.write(DB_FILE)"
+    },
+    {
+      "id": 6,
+      "file": "input.py",
+      "line_numbers": [44,45,46],
+      "vulnerability_type": "Path traversal / Arbitrary file read",
+      "severity": "High",
+      "description": "update_records opens an arbitrary path provided by the client.",
+      "fix_explanation": "Restrict file access to a configured directory and validate the resolved path starts with that directory.",
+      "secure_code_snippet": "base = os.path.abspath(CONFIG_DIR)\n target = os.path.abspath(os.path.join(base, filename))\n if not target.startswith(base): raise ValueError('invalid filename')"
+    },
+    {
+      "id": 7,
+      "file": "input.py",
+      "line_numbers": [87,88],
+      "vulnerability_type": "Debug mode enabled in production",
+      "severity": "High",
+      "description": "Flask is configured to run with debug=True which exposes the interactive debugger and detailed error pages.",
+      "fix_explanation": "Control debug via environment variable and default to False.",
+      "secure_code_snippet": "debug = os.environ.get('FLASK_DEBUG', '0') == '1'\n app.run(debug=debug)"
+    },
+    {
+      "id": 8,
+      "file": "input.py",
+      "line_numbers": [56,62,68,74,80],
+      "vulnerability_type": "Missing authentication/authorization",
+      "severity": "High",
+      "description": "Endpoints do not require an API key or proper authentication, allowing unauthenticated access.",
+      "fix_explanation": "Introduce an API key check using request header X-API-KEY and compare using secrets.compare_digest.",
+      "secure_code_snippet": "@app.before_request\n def check_api_key(): return require_api_key()"
+    }
+  ]
+}
