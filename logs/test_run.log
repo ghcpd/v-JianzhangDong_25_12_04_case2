@@ -1,0 +1,43 @@
+
+=== Test run at 2025-12-04T08:19:27.917181Z on Windows ===
+
+-- Running tests for input_backup.py at 2025-12-04T08:19:27.917198Z --
+'$f' �����ڲ����ⲿ���Ҳ���ǿ����еĳ���
+���������ļ���
+'$fail' �����ڲ����ⲿ���Ҳ���ǿ����еĳ���
+���������ļ���
+��ʱ��Ӧ�� -match��
+
+2025-12-04T08:19:28.146401Z - input_backup.py - TEST FAILED (exit 255)
+
+-- Running tests for input.py at 2025-12-04T08:19:28.146417Z --
+'$f' �����ڲ����ⲿ���Ҳ���ǿ����еĳ���
+���������ļ���
+'$fail' �����ڲ����ⲿ���Ҳ���ǿ����еĳ���
+���������ļ���
+��ʱ��Ӧ�� -match��
+
+2025-12-04T08:19:28.338883Z - input.py - TEST FAILED (exit 255)
+
+=== Final status at 2025-12-04T08:19:28.338915Z: TEST FAILED ===
+
+=== Test run at 2025-12-04T08:20:14.990157Z on Windows ===
+
+-- Running tests for input_backup.py at 2025-12-04T08:20:14.990188Z --
+FAIL: hardcoded PAYMENT_TOKEN found
+FAIL: hardcoded MAIL_SERVER_KEY found
+FAIL: hardcoded INTERNAL_AUTH found
+FAIL: SQL string formatting detected (possible SQL injection)
+FAIL: subprocess.Popen with shell=True detected (command injection risk)
+FAIL: app.run(debug=True) detected (do not run web server in debug mode in production)
+WARN: No environment variable lookups detected for secrets
+TEST FAILED
+
+2025-12-04T08:20:15.087270Z - input_backup.py - TEST FAILED (exit 1)
+
+-- Running tests for input.py at 2025-12-04T08:20:15.087284Z --
+TEST PASSED
+
+2025-12-04T08:20:15.175153Z - input.py - TEST PASSED (exit 0)
+
+=== Final status at 2025-12-04T08:20:15.175183Z: TEST PASSED ===
