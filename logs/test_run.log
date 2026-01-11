@@ -1,0 +1,328 @@
+2025-12-04T07:50:03.427542Z Detected environment: windows
+2025-12-04T07:50:03.429025Z === RUN input_backup ===
+2025-12-04T07:50:05.224153Z Running tests for module: input_backup
+FFFFF                                                                    [100%]
+================================== FAILURES ===================================
+_______________________ test_auth_user_uses_hmac_sha256 _______________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002401AACDA70>
+
+    def test_auth_user_uses_hmac_sha256(monkeypatch):
+        secret = "supersecret"
+        mod = reload_target(monkeypatch, {"INTERNAL_AUTH_SECRET": secret})
+        token = mod.auth_user({"username": "alice"})
+        expected = hmac.new(secret.encode(), b"alice", hashlib.sha256).hexdigest()
+>       assert token == expected
+E       AssertionError: assert 'cc5617e750ec...e36f695c75649' == 'bddb0249bfef...7790cade3eeef'
+E         
+E         - bddb0249bfef369d17492cb7f5f72d99a772d44482e3e22978d7790cade3eeef
+E         + cc5617e750ec29d47c7e36f695c75649
+
+tests\test_security.py:56: AssertionError
+__________________ test_query_profile_rejects_sql_injection ___________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002401B3B3490>
+temp_db = WindowsPath('C:/Users/v-jiandong/AppData/Local/Temp/pytest-of-v-jiandong/pytest-85/test_query_profile_rejects_sql0/test.db')
+
+    def test_query_profile_rejects_sql_injection(monkeypatch, temp_db):
+        mod = reload_target(monkeypatch, {"DB_FILE": str(temp_db)})
+        with pytest.raises(ValueError):
+>           mod.query_profile("1 OR 1=1")
+
+tests\test_security.py:62: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+uid = '1 OR 1=1'
+
+    def query_profile(uid):
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        q = "SELECT id,name,balance FROM profiles WHERE id = '%s'" % uid
+>       c.execute(q)
+E       sqlite3.OperationalError: no such table: profiles
+
+input_backup.py:28: OperationalError
+__________________ test_transfer_funds_blocks_insecure_urls ___________________
+
+mock_post = <MagicMock name='post' id='2474358236768'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002401B460A70>
+
+    @mock.patch("requests.post")
+    def test_transfer_funds_blocks_insecure_urls(mock_post, monkeypatch):
+        mock_resp = mock.Mock()
+        mock_resp.status_code = 200
+        mock_resp.text = "ok"
+        mock_resp.raise_for_status.return_value = None
+        mock_post.return_value = mock_resp
+    
+        env = {
+            "PAYMENT_TOKEN": "tok_test",
+            "ALLOWED_NOTIFY_HOSTS": "example.com",
+            "INTERNAL_AUTH_SECRET": "dummy",  # may be unused here but ensures consistency
+        }
+        mod = reload_target(monkeypatch, env)
+    
+        # Allowed HTTPS and host
+        result = mod.transfer_funds({
+            "target": "bob",
+            "amount": "10.5",
+            "notify_url": "https://example.com/hook",
+        })
+        assert result == "ok"
+        # ensure timeout is used to avoid hanging
+>       assert mock_post.call_args.kwargs.get("timeout") == 5
+E       AssertionError: assert None == 5
+E        +  where None = <built-in method get of dict object at 0x000002401B4D4F80>('timeout')
+E        +    where <built-in method get of dict object at 0x000002401B4D4F80> = {'json': {'amount': '10.5', 'token': 'tok_production_998877'}}.get
+E        +      where {'json': {'amount': '10.5', 'token': 'tok_production_998877'}} = call('https://example.com/hook', json={'token': 'tok_production_998877', 'amount': '10.5'}).kwargs
+E        +        where call('https://example.com/hook', json={'token': 'tok_production_998877', 'amount': '10.5'}) = <MagicMock name='post' id='2474358236768'>.call_args
+
+tests\test_security.py:88: AssertionError
+---------------------------- Captured stdout call -----------------------------
+transfer:bob:10.5
+_________________ test_export_data_sanitizes_and_creates_zip __________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002401B3EA580>
+tmp_path = WindowsPath('C:/Users/v-jiandong/AppData/Local/Temp/pytest-of-v-jiandong/pytest-85/test_export_data_sanitizes_and0')
+
+    def test_export_data_sanitizes_and_creates_zip(monkeypatch, tmp_path):
+        # create a dummy db file
+        db_file = tmp_path / "appdata.db"
+        db_file.write_text("dummy")
+        env = {"DB_FILE": str(db_file)}
+        mod = reload_target(monkeypatch, env)
+    
+        zip_path_str = mod.export_data("bad;rm -rf /")
+>       zip_path = Path(zip_path_str)
+                   ^^^^^^^^^^^^^^^^^^
+
+tests\test_security.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <[AttributeError("'pathlib.WindowsPath' object has no attribute '_raw_paths'") raised in repr()] WindowsPath object at 0x2401b4b8890>
+args = (True,), paths = [], arg = True, path = True
+
+    def __init__(self, *args):
+        paths = []
+        for arg in args:
+            if isinstance(arg, PurePath):
+                if arg.parser is not self.parser:
+                    # GH-103631: Convert separators for backwards compatibility.
+                    paths.append(arg.as_posix())
+                else:
+                    paths.extend(arg._raw_paths)
+            else:
+                try:
+                    path = os.fspath(arg)
+                except TypeError:
+                    path = arg
+                if not isinstance(path, str):
+>                   raise TypeError(
+                        "argument should be a str or an os.PathLike "
+                        "object where __fspath__ returns a str, "
+                        f"not {type(path).__name__!r}")
+E                   TypeError: argument should be a str or an os.PathLike object where __fspath__ returns a str, not 'bool'
+
+D:\python\Lib\pathlib\__init__.py:150: TypeError
+-------------------------- Captured stderr teardown ---------------------------
+'zip' \ufffd\ufffd\ufffd\ufffd\ufffd\u06b2\ufffd\ufffd\ufffd\ufffd\u2cbf\ufffd\ufffd\ufffd\ue8ec\u04b2\ufffd\ufffd\ufffd\u01ff\ufffd\ufffd\ufffd\ufffd\u0435\u0133\ufffd\ufffd\ufffd\r\n\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\u013c\ufffd\ufffd\ufffd\r
+__________________ test_update_records_blocks_path_traversal __________________
+
+config_dir = WindowsPath('C:/Users/v-jiandong/AppData/Local/Temp/pytest-of-v-jiandong/pytest-85/test_update_records_blocks_pat0/config')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002401B3EA250>
+
+    def test_update_records_blocks_path_traversal(config_dir, monkeypatch):
+        mod = reload_target(monkeypatch)
+        # valid read
+>       cfg = mod.update_records("valid.yaml")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_security.py:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = 'valid.yaml'
+
+    def update_records(path):
+>       with open(path) as f:
+             ^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'valid.yaml'
+
+input_backup.py:45: FileNotFoundError
+=========================== short test summary info ===========================
+FAILED tests/test_security.py::test_auth_user_uses_hmac_sha256 - AssertionErr...
+FAILED tests/test_security.py::test_query_profile_rejects_sql_injection - sql...
+FAILED tests/test_security.py::test_transfer_funds_blocks_insecure_urls - Ass...
+FAILED tests/test_security.py::test_export_data_sanitizes_and_creates_zip - T...
+FAILED tests/test_security.py::test_update_records_blocks_path_traversal - Fi...
+5 failed in 0.94s
+2025-12-04T07:50:05.226100Z TEST FAILED
+2025-12-04T07:50:05.226722Z === RUN inputs ===
+2025-12-04T07:50:06.670983Z Running tests for module: inputs
+.....                                                                    [100%]
+5 passed in 0.66s
+2025-12-04T07:50:06.671791Z TEST PASSED
+2025-12-04T07:50:06.672265Z OVERALL: TEST PASSED
+2025-12-04T07:50:29.601664+00:00 Detected environment: windows
+2025-12-04T07:50:29.602690+00:00 === RUN input_backup ===
+2025-12-04T07:50:31.412184+00:00 Running tests for module: input_backup
+FFFFF                                                                    [100%]
+================================== FAILURES ===================================
+_______________________ test_auth_user_uses_hmac_sha256 _______________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002B3506ED940>
+
+    def test_auth_user_uses_hmac_sha256(monkeypatch):
+        secret = "supersecret"
+        mod = reload_target(monkeypatch, {"INTERNAL_AUTH_SECRET": secret})
+        token = mod.auth_user({"username": "alice"})
+        expected = hmac.new(secret.encode(), b"alice", hashlib.sha256).hexdigest()
+>       assert token == expected
+E       AssertionError: assert 'cc5617e750ec...e36f695c75649' == 'bddb0249bfef...7790cade3eeef'
+E         
+E         - bddb0249bfef369d17492cb7f5f72d99a772d44482e3e22978d7790cade3eeef
+E         + cc5617e750ec29d47c7e36f695c75649
+
+tests\test_security.py:56: AssertionError
+__________________ test_query_profile_rejects_sql_injection ___________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002B350FD3360>
+temp_db = WindowsPath('C:/Users/v-jiandong/AppData/Local/Temp/pytest-of-v-jiandong/pytest-87/test_query_profile_rejects_sql0/test.db')
+
+    def test_query_profile_rejects_sql_injection(monkeypatch, temp_db):
+        mod = reload_target(monkeypatch, {"DB_FILE": str(temp_db)})
+        with pytest.raises(ValueError):
+>           mod.query_profile("1 OR 1=1")
+
+tests\test_security.py:62: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+uid = '1 OR 1=1'
+
+    def query_profile(uid):
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        q = "SELECT id,name,balance FROM profiles WHERE id = '%s'" % uid
+>       c.execute(q)
+E       sqlite3.OperationalError: no such table: profiles
+
+input_backup.py:28: OperationalError
+__________________ test_transfer_funds_blocks_insecure_urls ___________________
+
+mock_post = <MagicMock name='post' id='2969181365856'>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002B351084950>
+
+    @mock.patch("requests.post")
+    def test_transfer_funds_blocks_insecure_urls(mock_post, monkeypatch):
+        mock_resp = mock.Mock()
+        mock_resp.status_code = 200
+        mock_resp.text = "ok"
+        mock_resp.raise_for_status.return_value = None
+        mock_post.return_value = mock_resp
+    
+        env = {
+            "PAYMENT_TOKEN": "tok_test",
+            "ALLOWED_NOTIFY_HOSTS": "example.com",
+            "INTERNAL_AUTH_SECRET": "dummy",  # may be unused here but ensures consistency
+        }
+        mod = reload_target(monkeypatch, env)
+    
+        # Allowed HTTPS and host
+        result = mod.transfer_funds({
+            "target": "bob",
+            "amount": "10.5",
+            "notify_url": "https://example.com/hook",
+        })
+        assert result == "ok"
+        # ensure timeout is used to avoid hanging
+>       assert mock_post.call_args.kwargs.get("timeout") == 5
+E       AssertionError: assert None == 5
+E        +  where None = <built-in method get of dict object at 0x000002B3510F4FC0>('timeout')
+E        +    where <built-in method get of dict object at 0x000002B3510F4FC0> = {'json': {'amount': '10.5', 'token': 'tok_production_998877'}}.get
+E        +      where {'json': {'amount': '10.5', 'token': 'tok_production_998877'}} = call('https://example.com/hook', json={'token': 'tok_production_998877', 'amount': '10.5'}).kwargs
+E        +        where call('https://example.com/hook', json={'token': 'tok_production_998877', 'amount': '10.5'}) = <MagicMock name='post' id='2969181365856'>.call_args
+
+tests\test_security.py:88: AssertionError
+---------------------------- Captured stdout call -----------------------------
+transfer:bob:10.5
+_________________ test_export_data_sanitizes_and_creates_zip __________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002B35100A360>
+tmp_path = WindowsPath('C:/Users/v-jiandong/AppData/Local/Temp/pytest-of-v-jiandong/pytest-87/test_export_data_sanitizes_and0')
+
+    def test_export_data_sanitizes_and_creates_zip(monkeypatch, tmp_path):
+        # create a dummy db file
+        db_file = tmp_path / "appdata.db"
+        db_file.write_text("dummy")
+        env = {"DB_FILE": str(db_file)}
+        mod = reload_target(monkeypatch, env)
+    
+        zip_path_str = mod.export_data("bad;rm -rf /")
+>       zip_path = Path(zip_path_str)
+                   ^^^^^^^^^^^^^^^^^^
+
+tests\test_security.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <[AttributeError("'pathlib.WindowsPath' object has no attribute '_raw_paths'") raised in repr()] WindowsPath object at 0x2b3510d8900>
+args = (True,), paths = [], arg = True, path = True
+
+    def __init__(self, *args):
+        paths = []
+        for arg in args:
+            if isinstance(arg, PurePath):
+                if arg.parser is not self.parser:
+                    # GH-103631: Convert separators for backwards compatibility.
+                    paths.append(arg.as_posix())
+                else:
+                    paths.extend(arg._raw_paths)
+            else:
+                try:
+                    path = os.fspath(arg)
+                except TypeError:
+                    path = arg
+                if not isinstance(path, str):
+>                   raise TypeError(
+                        "argument should be a str or an os.PathLike "
+                        "object where __fspath__ returns a str, "
+                        f"not {type(path).__name__!r}")
+E                   TypeError: argument should be a str or an os.PathLike object where __fspath__ returns a str, not 'bool'
+
+D:\python\Lib\pathlib\__init__.py:150: TypeError
+-------------------------- Captured stderr teardown ---------------------------
+'zip' \ufffd\ufffd\ufffd\ufffd\ufffd\u06b2\ufffd\ufffd\ufffd\ufffd\u2cbf\ufffd\ufffd\ufffd\ue8ec\u04b2\ufffd\ufffd\ufffd\u01ff\ufffd\ufffd\ufffd\ufffd\u0435\u0133\ufffd\ufffd\ufffd\r\n\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\u013c\ufffd\ufffd\ufffd\r
+__________________ test_update_records_blocks_path_traversal __________________
+
+config_dir = WindowsPath('C:/Users/v-jiandong/AppData/Local/Temp/pytest-of-v-jiandong/pytest-87/test_update_records_blocks_pat0/config')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002B35100A030>
+
+    def test_update_records_blocks_path_traversal(config_dir, monkeypatch):
+        mod = reload_target(monkeypatch)
+        # valid read
+>       cfg = mod.update_records("valid.yaml")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_security.py:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = 'valid.yaml'
+
+    def update_records(path):
+>       with open(path) as f:
+             ^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'valid.yaml'
+
+input_backup.py:45: FileNotFoundError
+=========================== short test summary info ===========================
+FAILED tests/test_security.py::test_auth_user_uses_hmac_sha256 - AssertionErr...
+FAILED tests/test_security.py::test_query_profile_rejects_sql_injection - sql...
+FAILED tests/test_security.py::test_transfer_funds_blocks_insecure_urls - Ass...
+FAILED tests/test_security.py::test_export_data_sanitizes_and_creates_zip - T...
+FAILED tests/test_security.py::test_update_records_blocks_path_traversal - Fi...
+5 failed in 0.82s
+2025-12-04T07:50:31.414381+00:00 TEST FAILED
+2025-12-04T07:50:31.415025+00:00 === RUN inputs ===
+2025-12-04T07:50:32.913278+00:00 Running tests for module: inputs
+.....                                                                    [100%]
+5 passed in 0.70s
+2025-12-04T07:50:32.913937+00:00 TEST PASSED
+2025-12-04T07:50:32.914928+00:00 OVERALL: TEST PASSED
