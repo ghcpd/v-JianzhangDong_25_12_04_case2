@@ -1,0 +1,116 @@
+[2025-12-04T05:24:56.500805Z] RUNNING TESTS FOR: input_backup.py
+FFFFFF                                                                   [100%]
+================================== FAILURES ===================================
+__________________________ test_no_hardcoded_secrets __________________________
+
+    def test_no_hardcoded_secrets():
+        # These constants must not be present as hardcoded string literals
+        import re
+>       assert not re.search(r"PAYMENT_TOKEN\s*=\s*['\"]", source), 'PAYMENT_TOKEN is hardcoded as a string literal'
+E       AssertionError: PAYMENT_TOKEN is hardcoded as a string literal
+E       assert not <re.Match object; span=(152, 169), match='PAYMENT_TOKEN = "'>
+E        +  where <re.Match object; span=(152, 169), match='PAYMENT_TOKEN = "'> = <function search at 0x000002D57979FCC0>('PAYMENT_TOKEN\\s*=\\s*[\'\\"]', 'import os\nimport sqlite3\nimport requests\nimport hashlib\nfrom flask import Flask, request, jsonify\nimport subproc...ame")\n    export_data(name)\n    return jsonify({"ok": 1})\n\n\nif __name__ == "__main__":\n    app.run(debug=True)\n')
+E        +    where <function search at 0x000002D57979FCC0> = <module 're' from 'D:\\python\\Lib\\re\\__init__.py'>.search
+
+tests\test_vulnerabilities.py:20: AssertionError
+________________________ test_no_sql_string_formatting ________________________
+
+    def test_no_sql_string_formatting():
+        # SQL should not be built via string formatting with user input
+>       assert "% uid" not in source, 'SQL uses unsafe string formatting'
+E       AssertionError: SQL uses unsafe string formatting
+E       assert '% uid' not in 'import os\n...ebug=True)\n'
+E         
+E         '% uid' is contained here:
+E           d = '%s'" % uid
+E         ?           +++++
+E               c.execute(q)
+E               data = c.fetchall()
+E               conn.close()...
+E         
+E         ...Full output truncated (58 lines hidden), use '-vv' to show
+
+tests\test_vulnerabilities.py:27: AssertionError
+_____________________ test_no_shell_true_with_user_input ______________________
+
+    def test_no_shell_true_with_user_input():
+        # export_data should not use shell=True with user-supplied name
+>       assert 'shell=True' not in source, 'Uses shell=True for subprocess calls'
+E       AssertionError: Uses shell=True for subprocess calls
+E       assert 'shell=True' not in 'import os\n...ebug=True)\n'
+E         
+E         'shell=True' is contained here:
+E           open(cmd, shell=True)
+E               return True
+E           
+E           
+E           @app.route("/auth", methods=["POST"])...
+E         
+E         ...Full output truncated (32 lines hidden), use '-vv' to show
+
+tests\test_vulnerabilities.py:33: AssertionError
+__________________________ test_no_open_of_user_path __________________________
+
+    def test_no_open_of_user_path():
+        # update_records should not open a path supplied directly by user
+>       assert 'def update_records(path):' not in source or 'open(path)' not in source, 'Directly opening user-supplied path'
+E       AssertionError: Directly opening user-supplied path
+E       assert ('def update_records(path):' not in 'import os\n...ebug=True)\n'
+E         
+E         'def update_records(path):' is contained here:
+E           sp.text
+E           
+E           
+E           def update_records(path):
+E               with open(path) as f:...
+E         
+E         ...Full output truncated (43 lines hidden), use '-vv' to show or 'open(path)' not in 'import os\n...ebug=True)\n'
+E         
+E         'open(path)' is contained here:
+E           
+E               with open(path) as f:
+E         ?          ++++++++++
+E                   cfg = yaml.safe_load(f)
+E               return cfg...
+E         
+E         ...Full output truncated (41 lines hidden), use '-vv' to show)
+
+tests\test_vulnerabilities.py:38: AssertionError
+___________________ test_no_requests_to_user_controlled_url ___________________
+
+    def test_no_requests_to_user_controlled_url():
+        # transfer_funds must validate the notify_url before posting
+        if 'requests.post(url' in source:
+>           assert 'ALLOWED_NOTIFY_HOSTS' in source and 'urlparse' in source, 'Posting to a user-controlled URL must be validated via ALLOWED_NOTIFY_HOSTS and urlparse'
+E           AssertionError: Posting to a user-controlled URL must be validated via ALLOWED_NOTIFY_HOSTS and urlparse
+E           assert ('ALLOWED_NOTIFY_HOSTS' in 'import os\nimport sqlite3\nimport requests\nimport hashlib\nfrom flask import Flask, request, jsonify\nimport subproc...ame")\n    export_data(name)\n    return jsonify({"ok": 1})\n\n\nif __name__ == "__main__":\n    app.run(debug=True)\n')
+
+tests\test_vulnerabilities.py:44: AssertionError
+_____________________________ test_debug_disabled _____________________________
+
+    def test_debug_disabled():
+        # Debug mode is acceptable only when guarded by an explicit DEBUG env check
+        if 'app.run(debug=True)' in source:
+>           assert "os.getenv('DEBUG'" in source or 'os.getenv("DEBUG"' in source, 'Debug mode should be enabled only under a DEBUG env flag'
+E           AssertionError: Debug mode should be enabled only under a DEBUG env flag
+E           assert ("os.getenv('DEBUG'" in 'import os\nimport sqlite3\nimport requests\nimport hashlib\nfrom flask import Flask, request, jsonify\nimport subproc...ame")\n    export_data(name)\n    return jsonify({"ok": 1})\n\n\nif __name__ == "__main__":\n    app.run(debug=True)\n' or 'os.getenv("DEBUG"' in 'import os\nimport sqlite3\nimport requests\nimport hashlib\nfrom flask import Flask, request, jsonify\nimport subproc...ame")\n    export_data(name)\n    return jsonify({"ok": 1})\n\n\nif __name__ == "__main__":\n    app.run(debug=True)\n')
+
+tests\test_vulnerabilities.py:50: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_vulnerabilities.py::test_no_hardcoded_secrets - AssertionEr...
+FAILED tests/test_vulnerabilities.py::test_no_sql_string_formatting - Asserti...
+FAILED tests/test_vulnerabilities.py::test_no_shell_true_with_user_input - As...
+FAILED tests/test_vulnerabilities.py::test_no_open_of_user_path - AssertionEr...
+FAILED tests/test_vulnerabilities.py::test_no_requests_to_user_controlled_url
+FAILED tests/test_vulnerabilities.py::test_debug_disabled - AssertionError: D...
+6 failed in 0.08s
+
+[2025-12-04T05:24:57.375963Z] input_backup.py STATUS: FAILED (exit 1)
+
+[2025-12-04T05:24:57.376422Z] RUNNING TESTS FOR: input.py
+......                                                                   [100%]
+6 passed in 0.02s
+
+[2025-12-04T05:24:58.196528Z] input.py STATUS: PASSED (exit 0)
+
+[2025-12-04T05:24:58.196813Z] FINAL STATUS: TEST PASSED
